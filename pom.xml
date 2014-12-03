@@ -84,8 +84,20 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5</version>
+            </plugin>
         </plugins>
     </build>
+
+    <scm>
+        <connection>scm:git:https://github.com/dovalltd/iwallet-java-connector.git</connection>
+        <developerConnection>scm:git:git@github.com:dovalltd/iwallet-java-connector.git</developerConnection>
+        <url>https://github.com/dovalltd/iwallet-java-connector.git</url>
+        <tag>iwallet-java-connector-1.0</tag>
+    </scm>
 
     <profiles>
         <profile>
