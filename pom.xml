@@ -3,7 +3,7 @@
 
     <groupId>com.dreamoval.iwallet</groupId>
     <artifactId>iwallet-java-connector</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>iwallet-java-connector</name>
@@ -95,7 +95,7 @@
         <connection>scm:git:https://github.com/dovalltd/iwallet-java-connector.git</connection>
         <developerConnection>scm:git:git@github.com:dovalltd/iwallet-java-connector.git</developerConnection>
         <url>https://github.com/dovalltd/iwallet-java-connector.git</url>
-        <tag>iwallet-java-connector-1.0.0</tag>
+        <tag>iwallet-java-connector-1.0</tag>
     </scm>
 
     <profiles>
