@@ -50,7 +50,7 @@ public class IntegratorITCase {
             UUID.fromString(response);
             Assert.assertTrue("Response is a valid token", true);
         } catch (Exception ex) {
-            Assert.assertTrue("Response is a valid token", false);
+            Assert.assertTrue("Response is not a valid token", false);
         }
 
 
