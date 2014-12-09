@@ -2,22 +2,34 @@ import com.dreamoval.iwallet.connector.Integrator;
 import com.i_walletlive.paylive.ArrayOfOrderItem;
 import com.i_walletlive.paylive.OrderItem;
 import junit.framework.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.Properties;
 import java.util.UUID;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration({"classpath:TestApplicationContext.xml"})
+
 public class IntegratorITCase {
 
-    @Autowired
-    Integrator iwalletIntegrator;
+     static Integrator iwalletIntegrator;
+    static Properties props = new Properties();
+
+    @BeforeClass
+    public static void testSetup(){
+
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("local.properties");
+        try {
+            props.load(inputStream);
+            iwalletIntegrator = new Integrator(props.getProperty("api.iwallet.merchantKey"),props.getProperty("api.iwallet.merchantEmail"),Boolean.valueOf(props.getProperty("api.iwallet.integrationMode")),props.getProperty("api.iwallet.serviceType"),props.getProperty("api.iwallet.version"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void testCancelTransaction()  {
 

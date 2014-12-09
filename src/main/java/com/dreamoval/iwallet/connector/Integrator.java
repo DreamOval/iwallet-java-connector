@@ -1,25 +1,65 @@
 package com.dreamoval.iwallet.connector;
 
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
 
 import com.dreamoval.iwallet.connector.util.CancelAndConfirmResponse;
-import com.i_walletlive.paylive.ArrayOfOrderItem;
-import com.i_walletlive.paylive.OrderResult;
-import com.i_walletlive.paylive.PaymentServiceSoap;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.i_walletlive.paylive.*;
+import org.apache.cxf.headers.Header;
+import org.apache.cxf.jaxb.JAXBDataBinding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.stereotype.Component;
+import javax.xml.bind.JAXBException;
+import javax.xml.namespace.QName;
+import javax.xml.ws.BindingProvider;
 
 /**
  *
  */
-@Component(value = "integrator")
+
 public class Integrator{
 
-	@Autowired
-	@Qualifier("iwallet")
+    private static final Logger logger = LoggerFactory.getLogger(Integrator.class);
+
+    private String apiVersion;
+    private String wsdl ="https://i-walletlive.com/webservices/paymentservice.asmx?wsdl";
+    private String namespace = "http://www.i-walletlive.com/payLIVE";
+    private String serviceName = "PaymentService";
+    private String merchantKey;
+    private String merchantMail;
+    private Boolean integrationMode;
+    private String serviceType;
     PaymentServiceSoap paymentService;
+
+    public Integrator(String merchantKey,String merchantMail,Boolean integrationMode,String serviceType,String apiVersion) {
+        this.merchantKey = merchantKey;
+        this.merchantMail = merchantMail;
+        this.apiVersion = apiVersion;
+        this.integrationMode = integrationMode;
+        this.serviceType = serviceType;
+        this.paymentService = getPaymentService();
+        logger.debug("Integrator simple constructor with parameters: merchantKey: {}, merchantMail: {} ,integrationMode : {} ,serviceType: {}, apiVersion: {}",
+                new Object[] {wsdl,namespace,serviceName,merchantKey,merchantMail,integrationMode, serviceType,apiVersion});
+    }
+
+    public Integrator(String wsdl, String namespace, String serviceName, String merchantKey,String merchantMail,Boolean integrationMode,String serviceType,String apiVersion) {
+        this.wsdl = wsdl;
+        this.namespace = namespace;
+        this.serviceName = serviceName;
+        this.merchantKey = merchantKey;
+        this.merchantMail = merchantMail;
+        this.integrationMode = integrationMode;
+        this.apiVersion = apiVersion;
+        this.serviceType = serviceType;
+        this.paymentService = getPaymentService();
+        logger.debug("Integrator full stack constructor with parameters: wsdl: {}, namespace: {}, serviceName: {}, merchantKey: {}, merchantMail: {} ,integrationMode : {} ,serviceType: {}, apiVersion: {}",
+                new Object[]{wsdl, namespace, serviceName, merchantKey, merchantMail, integrationMode, serviceType, apiVersion});
+    }
 
     /**
      * Method to make payment with extra features like QR code relevant for iwallet cruize app to complete payment
@@ -97,7 +137,10 @@ public class Integrator{
 	}
 
     /**
-     *
+     * Method meant for mobile payment to call iWallet in order to check on the status of a transaction.
+     * This use case does is particular to QR code generated on merchant site for merchant end user to use iWallet Cruise
+     * mobile app to scan and complete the payment process inside the mobile app. This type of mobile payment excludes the need
+     * for redirect and callback.
      * @param orderId Reference of the order passed to iwallet
      * @return
      */
@@ -131,6 +174,11 @@ public class Integrator{
 	}
 
 
+    /**
+     * Helper method for parsing returned error code during cancel of confirm transaction call.
+     * @param response returned error code from cancel or confirm transaction call
+     * @return Full text explanation of the error code
+     */
     public String cancelAndConfirmTransactionResponseParser(int response){
 
         String status = "";
@@ -155,5 +203,56 @@ public class Integrator{
         }
 
         return status;
+    }
+
+
+    /**
+     * Helper method for getting properly configured payment service Object with required header as per specification
+     * @return iWallet PaymentService port
+     */
+    private PaymentServiceSoap getPaymentService(){
+        PaymentService iwalletService = null;
+        PaymentServiceSoap paymentServiceSoap = null;
+        try {
+            iwalletService = new PaymentService(new URL(this.wsdl),new QName(this.namespace,this.serviceName));
+            paymentServiceSoap = iwalletService.getPaymentServiceSoap();
+            logger.debug("getPaymentService paymentServiceSoap object",paymentServiceSoap);
+
+            List<Header> headersList = getHeaderList();
+            logger.debug("getPaymentService header list",headersList);
+
+            ((BindingProvider) paymentServiceSoap).getRequestContext().put(Header.HEADER_LIST,headersList);
+
+        } catch (MalformedURLException e) {
+            logger.info("MalformedURLException occurred", e);
+        }
+        logger.debug("getPaymentService iWallet Header enabled port", paymentServiceSoap);
+        return paymentServiceSoap;
+    }
+
+
+    /**
+     * Helper method for building list of PaymentHeader required by iWallet wdsl specification
+     * @return List of apache cxf Header objects
+     */
+    private List<Header> getHeaderList() {
+        List<Header> headersList = new ArrayList<Header>();
+
+        PaymentHeader payHeader = new PaymentHeader();
+        payHeader.setAPIVersion(apiVersion);
+        payHeader.setUseIntMode(integrationMode);
+        payHeader.setSvcType(serviceType);
+        payHeader.setMerchantKey(merchantKey);
+        payHeader.setMerchantEmail(merchantMail);
+
+        Header paymentHeader = null;
+        try {
+            paymentHeader = new Header(new QName(namespace, "PaymentHeader"),payHeader, new JAXBDataBinding(PaymentHeader.class));
+        } catch (JAXBException e) {
+            logger.info("JAXBException occurred",e);
+        }
+
+        headersList.add(paymentHeader);
+        return headersList;
     }
 }
